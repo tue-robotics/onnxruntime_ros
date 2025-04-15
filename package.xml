@@ -10,6 +10,8 @@
 
   <buildtool_depend>cmake</buildtool_depend>
 
+  <build_depend>g++-10</build_depend>
+
   <export>
     <build_type>cmake</build_type>
   </export>
