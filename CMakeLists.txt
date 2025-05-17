@@ -61,9 +61,11 @@ macro(build_onnxruntime)
   include(ExternalProject)
   ExternalProject_Add(onnxruntime
     GIT_REPOSITORY https://github.com/microsoft/onnxruntime
-    GIT_TAG v1.22.0
-    GIT_SUBMODULES ""
+    GIT_TAG v1.10.0
+    # GIT_SUBMODULES ""
     GIT_SUBMODULES_RECURSE OFF
+    GIT_SHALLOW OFF
+    GIT_PROGRESS ON
     LOG_CONFIGURE ${should_log}
     LOG_BUILD ${should_log}
     SOURCE_SUBDIR cmake
