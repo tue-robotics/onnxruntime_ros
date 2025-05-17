@@ -1,11 +1,11 @@
-# LibTorch install script for CMake
+# onnxruntime_ros
 
 This CMake project is basically an install script for LibTorch (PyTorch C++ API). It downloads the binary archieve and installs headers, libraries and CMake configurations files to the corresponding `INCLUDEDIR`, `LIBDIR` and `DATADIR` directories.
 
 The package can be used as part of a pure CMake catkin or colcon workspace by including:
 ```XML
   <buildtool_depend>cmake</buildtool_depend>
-  <depend>torch_cpp</depend>
+  <depend>onnx_runtime_ros</depend>
   <export>
     <build_type>cmake</build_type>
   </export>
