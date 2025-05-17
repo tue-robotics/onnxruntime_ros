@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.24 FATAL_ERROR)
 project(onnxruntime_ros CXX)
 
 cmake_policy(SET CMP0097 NEW)
+cmake_policy(SET CMP0148 OLD)
 
 find_package(catkin REQUIRED
   COMPONENTS
