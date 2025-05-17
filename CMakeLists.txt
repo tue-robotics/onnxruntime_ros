@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.24 FATAL_ERROR)
 project(onnxruntime_ros CXX)
 
 cmake_policy(SET CMP0097 NEW)
@@ -33,9 +33,8 @@ macro(build_onnxruntime)
   list(APPEND extra_cmake_args "-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}")
   list(APPEND extra_cmake_args "-DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}")
 
-  # TODO(anyone): Verify Windows build
-  if(WIN32 AND NOT ${CMAKE_VERBOSE_MAKEFILE})
-    set(should_log ON)  # prevent warnings in Windows CI
+  if(NOT ${CMAKE_VERBOSE_MAKEFILE})
+    set(should_log ON)
   else()
     set(should_log OFF)
   endif()
@@ -58,10 +57,16 @@ macro(build_onnxruntime)
     message(STATUS "Compiling without CUDA")
   endif()
 
+  if(CATKIN_ENABLE_TESTING)
+    list(APPEND extra_cmake_args "-Donnxruntime_BUILD_UNIT_TESTS=ON")
+  else()
+    list(APPEND extra_cmake_args "-Donnxruntime_BUILD_UNIT_TESTS=OFF")
+  endif()
+
   include(ExternalProject)
   ExternalProject_Add(onnxruntime
     GIT_REPOSITORY https://github.com/microsoft/onnxruntime
-    GIT_TAG v1.10.0
+    GIT_TAG v${onnxruntime_ros_VERSION}
     # GIT_SUBMODULES ""
     GIT_SUBMODULES_RECURSE OFF
     GIT_SHALLOW OFF
@@ -87,7 +92,6 @@ endmacro()
 
 build_onnxruntime()
 
-# TODO(Briancbn): environment variables in Windows
 catkin_add_env_hooks(99.onnxruntime_ros_library_path SHELLS bash DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/env-hooks)
 if(APPLE)
   set(ENV_VAR_NAME "DYLD_LIBRARY_PATH")
@@ -100,3 +104,8 @@ catkin_add_env_hooks(99.onnxruntime_ros_library_path.dsv.in DIRECTORY ${CMAKE_CU
 catkin_package(
   CFG_EXTRAS "onnxruntime_ros-extras.cmake.in"
 )
+
+if(CATKIN_ENABLE_TESTING)
+  find_package(catkin_lint_cmake REQUIRED)
+  catkin_add_catkin_lint_test("-W2")
+endif()
