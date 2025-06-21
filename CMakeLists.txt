@@ -29,8 +29,8 @@ macro(build_onnxruntime)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -w")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
 
-  # list(APPEND extra_cmake_args "-Donnxruntime_BUILD_UNIT_TESTS=OFF")
-  list(APPEND extra_cmake_args "-Donnxruntime_BUILD_SHARED_LIB=ON")
+  list(APPEND extra_cmake_args "-Donnxruntime_BUILD_UNIT_TESTS=OFF")
+  # list(APPEND extra_cmake_args "-Donnxruntime_BUILD_SHARED_LIB=ON")
   list(APPEND extra_cmake_args "-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}")
   list(APPEND extra_cmake_args "-DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}")
 
@@ -47,26 +47,21 @@ macro(build_onnxruntime)
   include(CheckLanguage)
   check_language(CUDA)
   if(CMAKE_CUDA_COMPILER)
+  # if(false)
     message(STATUS "Compiling with CUDA")
     # Add additional cuda related cmake variables
     list(APPEND extra_cmake_args "-Donnxruntime_USE_CUDA=ON")
     list(APPEND extra_cmake_args "-Donnxruntime_CUDA_HOME=/usr/local/cuda/")
     list(APPEND extra_cmake_args "-DCUDA_CUDA_LIBRARY=/usr/local/cuda/lib64/stubs/")
-    list(APPEND extra_cmake_args "-Donnxruntime_CUDNN_HOME=/usr")
+    #list(APPEND extra_cmake_args "-Donnxruntime_CUDNN_HOME=/usr")
     list(APPEND extra_cmake_args "-Donnxruntime_USE_FULL_PROTOBUF=ON")
   else()
     message(STATUS "Compiling without CUDA")
   endif()
 
-  if(CATKIN_ENABLE_TESTING)
-    list(APPEND extra_cmake_args "-Donnxruntime_BUILD_UNIT_TESTS=ON")
-  else()
-    list(APPEND extra_cmake_args "-Donnxruntime_BUILD_UNIT_TESTS=OFF")
-  endif()
-
   include(ExternalProject)
   ExternalProject_Add(onnxruntime
-    GIT_REPOSITORY https://github.com/microsoft/onnxruntime
+    GIT_REPOSITORY https://github.com/tue-robotics/onnxruntime
     GIT_TAG v${onnxruntime_ros_VERSION}
     # GIT_SUBMODULES ""
     GIT_SUBMODULES_RECURSE OFF
