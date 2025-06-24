@@ -40,7 +40,7 @@ macro(build_onnxruntime)
     set(ONNXRUNTIME_FILENAME "onnxruntime-linux-x64-${onnxruntime_ros_VERSION}.tgz")
   endif()
 
-  SET(EP_NAME "onnxruntime")
+  SET(EP_NAME "EP_${PROJECT_NAME}")
 
   set(ONNXRUNTIME_SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/${EP_NAME}-prefix/src/${EP_NAME}")
   set(ONNXRUNTIME_INSTALL_DIR "${CMAKE_CURRENT_BINARY_DIR}/${EP_NAME}_install")
@@ -66,9 +66,6 @@ macro(build_onnxruntime)
         CACHE FILEPATH "ONNXRUNTIME shared library." FORCE)
   endif()
 
-  file(GLOB LIBRARY_FILES)
-
-
   include(ExternalProject)
   ExternalProject_Add(${EP_NAME}
     URL "${ONNXRUNTIME_URL_BASE}/${ONNXRUNTIME_FILENAME}"
@@ -79,21 +76,14 @@ macro(build_onnxruntime)
     BUILD_COMMAND ""
     UPDATE_COMMAND ""
     INSTALL_COMMAND
-      # ${CMAKE_COMMAND} -E remove_directory ${ONNXRUNTIME_INSTALL_DIR} &&
-      ${CMAKE_COMMAND} -E make_directory ${ONNXRUNTIME_INSTALL_DIR} &&
-      ${CMAKE_COMMAND} -E copy ${ONNXRUNTIME_SOURCE_DIR}/include ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_INCLUDE_DESTINATION} &&
-      ${CMAKE_COMMAND} -E copy_if_different "${ONNXRUNTIME_SOURCE_DIR}/lib/libonnxruntime.so" ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}
+      # COMMAND ${CMAKE_COMMAND} -E remove_directory ${ONNXRUNTIME_INSTALL_DIR}
+      # COMMAND ${CMAKE_COMMAND} -E make_directory ${ONNXRUNTIME_INSTALL_DIR}
+      COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different ${ONNXRUNTIME_SOURCE_DIR}/lib/cmake ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_SHARE_DESTINATION}/cmake
+      COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different ${ONNXRUNTIME_SOURCE_DIR}/include ${CATKIN_DEVEL_PREFIX}/${CATKIN_GLOBAL_INCLUDE_DESTINATION}
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ONNXRUNTIME_SOURCE_DIR}/lib/libonnxruntime.so" ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}
     BUILD_BYPRODUCTS ${ONNXRUNTIME_LIB}
   )
 
-  # The external project will install to the build folder, but we'll install that on make install.
-  # install(
-  #   DIRECTORY
-  #     ${ONNXRUNTIME_INSTALL_DIR}
-  #   DESTINATION
-  #     ${CMAKE_INSTALL_PREFIX}/opt/onnxruntime_ros
-  #   USE_SOURCE_PERMISSIONS
-  # )
   install(
     DIRECTORY ${ONNXRUNTIME_LIB_DIR}/cmake/
     DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/cmake
@@ -103,8 +93,8 @@ macro(build_onnxruntime)
     DESTINATION ${CATKIN_GLOBAL_LIB_DESTINATION}/pkgconfig
   )
   install(
-    DIRECTORY ${ONNXRUNTIME_INCLUDE_DIR}
-    DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+    DIRECTORY ${CATKIN_DEVEL_PREFIX}/${CATKIN_GLOBAL_INCLUDE_DESTINATION}/
+    DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION}
   )
   install(
     FILES ${ONNXRUNTIME_LIB}
@@ -124,9 +114,9 @@ build_onnxruntime()
 # catkin_add_env_hooks(99.onnxruntime_ros_library_path.dsv.in DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/env-hooks)
 
 catkin_package(
-  # CFG_EXTRAS "onnxruntime_ros-extras.cmake.in"
+  CFG_EXTRAS onnxruntime_ros-extras.cmake
   # INCLUDE_DIRECTORIES SYSTEM include
-  LIBRARIES onnxruntime
+  EXPORTED_TARGETS ${EP_NAME}
 )
 
 if(CATKIN_ENABLE_TESTING)
