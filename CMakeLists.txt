@@ -4,9 +4,7 @@ project(onnxruntime_ros)
 cmake_policy(SET CMP0097 NEW)
 cmake_policy(SET CMP0148 OLD)
 
-find_package(catkin REQUIRED
-  COMPONENTS
-)
+find_package(catkin REQUIRED)
 
 catkin_package_xml()
 # split version in parts and pass to extra file
@@ -115,21 +113,6 @@ macro(build_onnxruntime)
 endmacro()
 
 build_onnxruntime()
-
-#find_package(catkin REQUIRED
-  #COMPONENTS
-#)
-
-#catkin_package_xml()
-## split version in parts and pass to extra file
-#string(REPLACE "." ";" onnxruntime_ros_VERSION_LIST "${onnxruntime_ros_VERSION}")
-#list(LENGTH onnxruntime_ros_VERSION_LIST _count)
-#if(NOT _count EQUAL 3)
-  #message(FATAL_ERROR "onnxruntime_ros version '${onnxruntime_ros_VERSION}' does not match 'MAJOR.MINOR.PATCH' pattern")
-#endif()
-#list(GET onnxruntime_ros_VERSION_LIST 0 onnxruntime_ros_VERSION_MAJOR)
-#list(GET onnxruntime_ros_VERSION_LIST 1 onnxruntime_ros_VERSION_MINOR)
-#list(GET onnxruntime_ros_VERSION_LIST 2 onnxruntime_ros_VERSION_PATCH)
 
 # catkin_add_env_hooks(99.onnxruntime_ros_library_path SHELLS bash DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/env-hooks)
 # if(APPLE)
