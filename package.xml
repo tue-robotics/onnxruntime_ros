@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="3">
   <name>onnxruntime_ros</name>
-  <version>1.21.1</version>
+  <version>1.22.0</version>
   <description>onnxruntime_ros library</description>
 
   <maintainer email="MatthijsBurgh@outlook.com">Matthijs van der Burgh</maintainer>
