@@ -8,39 +8,36 @@ find_package(catkin REQUIRED)
 
 catkin_package_xml()
 # split version in parts and pass to extra file
-string(REPLACE "." ";" onnxruntime_ros_VERSION_LIST "${onnxruntime_ros_VERSION}")
-list(LENGTH onnxruntime_ros_VERSION_LIST _count)
+string(REPLACE "." ";" ${PROJECT_NAME}_VERSION_LIST "${${PROJECT_NAME}_VERSION}")
+list(LENGTH ${PROJECT_NAME}_VERSION_LIST _count)
 if(NOT _count EQUAL 3)
-  message(FATAL_ERROR "onnxruntime_ros version '${onnxruntime_ros_VERSION}' does not match 'MAJOR.MINOR.PATCH' pattern")
+  message(FATAL_ERROR "${PROJECT_NAME} version '${${PROJECT_NAME}_VERSION}' does not match 'MAJOR.MINOR.PATCH' pattern")
 endif()
-list(GET onnxruntime_ros_VERSION_LIST 0 onnxruntime_ros_VERSION_MAJOR)
-list(GET onnxruntime_ros_VERSION_LIST 1 onnxruntime_ros_VERSION_MINOR)
-list(GET onnxruntime_ros_VERSION_LIST 2 onnxruntime_ros_VERSION_PATCH)
+list(GET ${PROJECT_NAME}_VERSION_LIST 0 ${PROJECT_NAME}_VERSION_MAJOR)
+list(GET ${PROJECT_NAME}_VERSION_LIST 1 ${PROJECT_NAME}_VERSION_MINOR)
+list(GET ${PROJECT_NAME}_VERSION_LIST 2 ${PROJECT_NAME}_VERSION_PATCH)
 
 macro(build_onnxruntime)
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -w")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
-
   if(NOT ${CMAKE_VERBOSE_MAKEFILE})
     set(should_log ON)
   else()
     set(should_log OFF)
   endif()
 
-  set(ONNXRUNTIME_URL_BASE "https://github.com/microsoft/onnxruntime/releases/download/v${onnxruntime_ros_VERSION}")
+  set(ONNXRUNTIME_URL_BASE "https://github.com/microsoft/onnxruntime/releases/download/v${${PROJECT_NAME}_VERSION}")
 
   include(CheckLanguage)
   check_language(CUDA)
   if(CMAKE_CUDA_COMPILER)
     enable_language(CUDA)
     message(STATUS "Compiling with CUDA")
-    set(ONNXRUNTIME_FILENAME "onnxruntime-linux-x64-gpu-${onnxruntime_ros_VERSION}.tgz")
+    set(ONNXRUNTIME_FILENAME "onnxruntime-linux-x64-gpu-${${PROJECT_NAME}_VERSION}.tgz")
   else()
     message(STATUS "Compiling without CUDA")
-    set(ONNXRUNTIME_FILENAME "onnxruntime-linux-x64-${onnxruntime_ros_VERSION}.tgz")
+    set(ONNXRUNTIME_FILENAME "onnxruntime-linux-x64-${${PROJECT_NAME}_VERSION}.tgz")
   endif()
 
-  SET(EP_NAME "EP_${PROJECT_NAME}")
+  set(EP_NAME "EP_${PROJECT_NAME}")
 
   set(ONNXRUNTIME_SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/${EP_NAME}-prefix/src/${EP_NAME}")
   set(ONNXRUNTIME_INSTALL_DIR "${CMAKE_CURRENT_BINARY_DIR}/${EP_NAME}_install")
@@ -67,7 +64,7 @@ macro(build_onnxruntime)
   endif()
 
   include(ExternalProject)
-  ExternalProject_Add(${EP_NAME}
+  externalproject_add(${EP_NAME}
     URL "${ONNXRUNTIME_URL_BASE}/${ONNXRUNTIME_FILENAME}"
     DOWNLOAD_NO_PROGRESS NOT ${should_log}
     LOG_CONFIGURE ${should_log}
@@ -93,7 +90,7 @@ macro(build_onnxruntime)
     DESTINATION ${CATKIN_GLOBAL_LIB_DESTINATION}/pkgconfig
   )
   install(
-    DIRECTORY ${CATKIN_DEVEL_PREFIX}/${CATKIN_GLOBAL_INCLUDE_DESTINATION}/
+    DIRECTORY ${ONNXRUNTIME_SOURCE_DIR}/include/
     DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION}
   )
   install(
@@ -114,7 +111,7 @@ build_onnxruntime()
 # catkin_add_env_hooks(99.onnxruntime_ros_library_path.dsv.in DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/env-hooks)
 
 catkin_package(
-  CFG_EXTRAS onnxruntime_ros-extras.cmake
+  CFG_EXTRAS ${PROJECT_NAME}-extras.cmake
   # INCLUDE_DIRECTORIES SYSTEM include
   EXPORTED_TARGETS ${EP_NAME}
 )
