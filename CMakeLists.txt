@@ -110,6 +110,12 @@ build_onnxruntime()
 # set(ENV_VAR_VALUE "opt/onnxruntime_ros/lib")
 # catkin_add_env_hooks(99.onnxruntime_ros_library_path.dsv.in DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/env-hooks)
 
+if(CMAKE_CUDA_COMPILER)
+    set(${PROJECT_NAME}_CUDA_ENABLED TRUE)
+else()
+    set(${PROJECT_NAME}_CUDA_ENABLED FALSE)
+endif()
+
 catkin_package(
   CFG_EXTRAS ${PROJECT_NAME}-extras.cmake
   # INCLUDE_DIRECTORIES SYSTEM include
