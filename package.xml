@@ -2,7 +2,7 @@
 <package format="3">
   <name>onnxruntime_ros</name>
   <version>1.22.0</version>
-  <description>onnxruntime_ros library</description>
+  <description>Wrapper around the onnxruntime library to include it in a catkin workspace</description>
 
   <maintainer email="MatthijsBurgh@outlook.com">Matthijs van der Burgh</maintainer>
 
