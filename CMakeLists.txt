@@ -1,67 +1,43 @@
 cmake_minimum_required(VERSION 3.24 FATAL_ERROR)
-project(onnxruntime_ros CXX)
+project(onnxruntime_ros)
 
 cmake_policy(SET CMP0097 NEW)
-#cmake_policy(SET CMP0148 OLD)
+cmake_policy(SET CMP0148 OLD)
 
-find_package(catkin REQUIRED
-  COMPONENTS
-)
+find_package(catkin REQUIRED)
 
 catkin_package_xml()
 # split version in parts and pass to extra file
-string(REPLACE "." ";" onnxruntime_ros_VERSION_LIST "${onnxruntime_ros_VERSION}")
-list(LENGTH onnxruntime_ros_VERSION_LIST _count)
+string(REPLACE "." ";" ${PROJECT_NAME}_VERSION_LIST "${${PROJECT_NAME}_VERSION}")
+list(LENGTH ${PROJECT_NAME}_VERSION_LIST _count)
 if(NOT _count EQUAL 3)
-  message(FATAL_ERROR "onnxruntime_ros version '${onnxruntime_ros_VERSION}' does not match 'MAJOR.MINOR.PATCH' pattern")
+  message(FATAL_ERROR "${PROJECT_NAME} version '${${PROJECT_NAME}_VERSION}' does not match 'MAJOR.MINOR.PATCH' pattern")
 endif()
-list(GET onnxruntime_ros_VERSION_LIST 0 onnxruntime_ros_VERSION_MAJOR)
-list(GET onnxruntime_ros_VERSION_LIST 1 onnxruntime_ros_VERSION_MINOR)
-list(GET onnxruntime_ros_VERSION_LIST 2 onnxruntime_ros_VERSION_PATCH)
+list(GET ${PROJECT_NAME}_VERSION_LIST 0 ${PROJECT_NAME}_VERSION_MAJOR)
+list(GET ${PROJECT_NAME}_VERSION_LIST 1 ${PROJECT_NAME}_VERSION_MINOR)
+list(GET ${PROJECT_NAME}_VERSION_LIST 2 ${PROJECT_NAME}_VERSION_PATCH)
 
 macro(build_onnxruntime)
-  # set(extra_cmake_args)
-
-  # if(DEFINED CMAKE_BUILD_TYPE)
-    # list(APPEND extra_cmake_args -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE})
-  # endif()
-
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -w")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
-
-  # list(APPEND extra_cmake_args "-Donnxruntime_BUILD_UNIT_TESTS=OFF")
-  # # list(APPEND extra_cmake_args "-Donnxruntime_BUILD_SHARED_LIB=ON")
-  # list(APPEND extra_cmake_args "-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}")
-  # list(APPEND extra_cmake_args "-DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}")
-
   if(NOT ${CMAKE_VERBOSE_MAKEFILE})
     set(should_log ON)
   else()
     set(should_log OFF)
   endif()
 
-  # if(DEFINED CMAKE_TOOLCHAIN_FILE)
-    # list(APPEND extra_cmake_args "-DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}")
-  # endif()
-
-  set(ONNXRUNTIME_URL_BASE "https://github.com/microsoft/onnxruntime/releases/download/v${onnxruntime_ros_VERSION}")
+  set(ONNXRUNTIME_URL_BASE "https://github.com/microsoft/onnxruntime/releases/download/v${${PROJECT_NAME}_VERSION}")
 
   include(CheckLanguage)
   check_language(CUDA)
   if(CMAKE_CUDA_COMPILER)
+    enable_language(CUDA)
     message(STATUS "Compiling with CUDA")
-    set(ONNXRUNTIME_FILENAME "onnxruntime-linux-x64-gpu-${onnxruntime_ros_VERSION}.tgz")
-    # Add additional cuda related cmake variables
-    # list(APPEND extra_cmake_args "-Donnxruntime_USE_CUDA=ON")
-    # list(APPEND extra_cmake_args "-Donnxruntime_CUDA_HOME=/usr/local/cuda/")
-    # list(APPEND extra_cmake_args "-DCUDA_CUDA_LIBRARY=/usr/local/cuda/lib64/stubs/")
-    # list(APPEND extra_cmake_args "-Donnxruntime_USE_FULL_PROTOBUF=ON")
+    set(ONNXRUNTIME_FILENAME "onnxruntime-linux-x64-gpu-${${PROJECT_NAME}_VERSION}.tgz")
   else()
     message(STATUS "Compiling without CUDA")
-    set(ONNXRUNTIME_FILENAME "onnxruntime-linux-x64-${onnxruntime_ros_VERSION}.tgz")
+    set(ONNXRUNTIME_FILENAME "onnxruntime-linux-x64-${${PROJECT_NAME}_VERSION}.tgz")
   endif()
 
-  SET(EP_NAME "onnxruntime")
+  set(EP_NAME "EP_${PROJECT_NAME}")
 
   set(ONNXRUNTIME_SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/${EP_NAME}-prefix/src/${EP_NAME}")
   set(ONNXRUNTIME_INSTALL_DIR "${CMAKE_CURRENT_BINARY_DIR}/${EP_NAME}_install")
@@ -87,11 +63,9 @@ macro(build_onnxruntime)
         CACHE FILEPATH "ONNXRUNTIME shared library." FORCE)
   endif()
 
-
   include(ExternalProject)
-  ExternalProject_Add(${EP_NAME}
-    URL ${ONNXRUNTIME_URL_BASE}/${ONNXRUNTIME_FILENAME}
-    URL_MD5 9e29988a3148f31a4379248d0a1b68d9
+  externalproject_add(${EP_NAME}
+    URL "${ONNXRUNTIME_URL_BASE}/${ONNXRUNTIME_FILENAME}"
     DOWNLOAD_NO_PROGRESS NOT ${should_log}
     LOG_CONFIGURE ${should_log}
     LOG_BUILD ${should_log}
@@ -99,21 +73,14 @@ macro(build_onnxruntime)
     BUILD_COMMAND ""
     UPDATE_COMMAND ""
     INSTALL_COMMAND
-      # ${CMAKE_COMMAND} -E remove_directory ${ONNXRUNTIME_INSTALL_DIR} &&
-      ${CMAKE_COMMAND} -E make_directory ${ONNXRUNTIME_INSTALL_DIR} &&
-      ${CMAKE_COMMAND} -E create_symlink ${ONNXRUNTIME_SOURCE_DIR}/lib/ ${ONNXRUNTIME_LIB_DIR} &&
-      ${CMAKE_COMMAND} -E create_symlink ${ONNXRUNTIME_SOURCE_DIR}/include ${ONNXRUNTIME_INCLUDE_DIR}
+      # COMMAND ${CMAKE_COMMAND} -E remove_directory ${ONNXRUNTIME_INSTALL_DIR}
+      # COMMAND ${CMAKE_COMMAND} -E make_directory ${ONNXRUNTIME_INSTALL_DIR}
+      COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different ${ONNXRUNTIME_SOURCE_DIR}/lib/cmake ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_SHARE_DESTINATION}/cmake
+      COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different ${ONNXRUNTIME_SOURCE_DIR}/include ${CATKIN_DEVEL_PREFIX}/${CATKIN_GLOBAL_INCLUDE_DESTINATION}
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ONNXRUNTIME_SOURCE_DIR}/lib/libonnxruntime.so" ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}
     BUILD_BYPRODUCTS ${ONNXRUNTIME_LIB}
   )
 
-  # The external project will install to the build folder, but we'll install that on make install.
-  # install(
-  #   DIRECTORY
-  #     ${ONNXRUNTIME_INSTALL_DIR}
-  #   DESTINATION
-  #     ${CMAKE_INSTALL_PREFIX}/opt/onnxruntime_ros
-  #   USE_SOURCE_PERMISSIONS
-  # )
   install(
     DIRECTORY ${ONNXRUNTIME_LIB_DIR}/cmake/
     DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/cmake
@@ -123,8 +90,8 @@ macro(build_onnxruntime)
     DESTINATION ${CATKIN_GLOBAL_LIB_DESTINATION}/pkgconfig
   )
   install(
-    DIRECTORY ${ONNXRUNTIME_INCLUDE_DIR}
-    DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+    DIRECTORY ${ONNXRUNTIME_SOURCE_DIR}/include/
+    DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION}
   )
   install(
     FILES ${ONNXRUNTIME_LIB}
@@ -134,37 +101,28 @@ endmacro()
 
 build_onnxruntime()
 
-#find_package(catkin REQUIRED
-  #COMPONENTS
-#)
+# catkin_add_env_hooks(99.onnxruntime_ros_library_path SHELLS bash DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/env-hooks)
+# if(APPLE)
+#   set(ENV_VAR_NAME "DYLD_LIBRARY_PATH")
+# else()
+#   set(ENV_VAR_NAME "LD_LIBRARY_PATH")
+# endif()
+# set(ENV_VAR_VALUE "opt/onnxruntime_ros/lib")
+# catkin_add_env_hooks(99.onnxruntime_ros_library_path.dsv.in DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/env-hooks)
 
-#catkin_package_xml()
-## split version in parts and pass to extra file
-#string(REPLACE "." ";" onnxruntime_ros_VERSION_LIST "${onnxruntime_ros_VERSION}")
-#list(LENGTH onnxruntime_ros_VERSION_LIST _count)
-#if(NOT _count EQUAL 3)
-  #message(FATAL_ERROR "onnxruntime_ros version '${onnxruntime_ros_VERSION}' does not match 'MAJOR.MINOR.PATCH' pattern")
-#endif()
-#list(GET onnxruntime_ros_VERSION_LIST 0 onnxruntime_ros_VERSION_MAJOR)
-#list(GET onnxruntime_ros_VERSION_LIST 1 onnxruntime_ros_VERSION_MINOR)
-#list(GET onnxruntime_ros_VERSION_LIST 2 onnxruntime_ros_VERSION_PATCH)
-
-catkin_add_env_hooks(99.onnxruntime_ros_library_path SHELLS bash DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/env-hooks)
-if(APPLE)
-  set(ENV_VAR_NAME "DYLD_LIBRARY_PATH")
+if(CMAKE_CUDA_COMPILER)
+    set(${PROJECT_NAME}_CUDA_ENABLED TRUE)
 else()
-  set(ENV_VAR_NAME "LD_LIBRARY_PATH")
+    set(${PROJECT_NAME}_CUDA_ENABLED FALSE)
 endif()
-set(ENV_VAR_VALUE "opt/onnxruntime_ros/lib")
-catkin_add_env_hooks(99.onnxruntime_ros_library_path.dsv.in DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/env-hooks)
 
 catkin_package(
-  CFG_EXTRAS "onnxruntime_ros-extras.cmake.in"
+  CFG_EXTRAS ${PROJECT_NAME}-extras.cmake
   # INCLUDE_DIRECTORIES SYSTEM include
-  LIBRARIES onnxruntime
+  EXPORTED_TARGETS ${EP_NAME}
 )
 
 if(CATKIN_ENABLE_TESTING)
   find_package(catkin_lint_cmake REQUIRED)
-  catkin_add_catkin_lint_test("-W2")
+  catkin_add_catkin_lint_test("-W2 --ignore GLOBAL_VAR_COLLISION --ignore MISSING_DIRECTORY --ignore MISSING_FILE --ignore UNDEFINED_TARGET")
 endif()
