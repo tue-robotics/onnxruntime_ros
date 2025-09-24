@@ -77,7 +77,10 @@ macro(build_onnxruntime)
       # COMMAND ${CMAKE_COMMAND} -E make_directory ${ONNXRUNTIME_INSTALL_DIR}
       COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different ${ONNXRUNTIME_SOURCE_DIR}/lib/cmake ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_SHARE_DESTINATION}/cmake
       COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different ${ONNXRUNTIME_SOURCE_DIR}/include ${CATKIN_DEVEL_PREFIX}/${CATKIN_GLOBAL_INCLUDE_DESTINATION}
-      COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ONNXRUNTIME_SOURCE_DIR}/lib/libonnxruntime.so" ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}
+      COMMAND ${CMAKE_COMMAND} -E make_directory ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}
+      # Copy all versioned library files preserving symlinks
+      COMMAND bash -c "cp -P ${ONNXRUNTIME_SOURCE_DIR}/lib/libonnxruntime.so* ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/ || true"
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ONNXRUNTIME_SOURCE_DIR}/lib/libonnxruntime_providers_shared.so" ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}
     BUILD_BYPRODUCTS ${ONNXRUNTIME_LIB}
   )
 
@@ -93,8 +96,71 @@ macro(build_onnxruntime)
     DIRECTORY ${ONNXRUNTIME_SOURCE_DIR}/include/
     DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION}
   )
+  # Install versioned library files with symlinks preserved
+  if(WIN32)
+    # Windows: Install .lib and .dll files directly
+    install(
+      FILES "${ONNXRUNTIME_SOURCE_DIR}/lib/onnxruntime.lib"
+      DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+      OPTIONAL
+    )
+    install(
+      FILES "${ONNXRUNTIME_SOURCE_DIR}/lib/onnxruntime.dll"
+      DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+      OPTIONAL
+    )
+  elseif(APPLE)
+    # macOS: Handle potential versioned .dylib files with symlinks
+    install(CODE "
+      # Ensure the destination directory exists
+      file(MAKE_DIRECTORY \${CMAKE_INSTALL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION})
+      
+      file(GLOB ONNXRUNTIME_LIBS \"${ONNXRUNTIME_SOURCE_DIR}/lib/libonnxruntime.dylib*\")
+      foreach(lib_file \${ONNXRUNTIME_LIBS})
+        get_filename_component(lib_name \${lib_file} NAME)
+        if(IS_SYMLINK \${lib_file})
+          # Read the symlink target
+          file(READ_SYMLINK \${lib_file} symlink_target)
+          # Create symlink in destination
+          execute_process(
+            COMMAND \${CMAKE_COMMAND} -E create_symlink \${symlink_target} \${CMAKE_INSTALL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/\${lib_name}
+          )
+        else()
+          # Copy regular file
+          execute_process(
+            COMMAND \${CMAKE_COMMAND} -E copy_if_different \${lib_file} \${CMAKE_INSTALL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/
+          )
+        endif()
+      endforeach()
+    ")
+  else()
+    # Linux: Handle versioned .so files with symlinks
+    install(CODE "
+      # Ensure the destination directory exists
+      file(MAKE_DIRECTORY \${CMAKE_INSTALL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION})
+      
+      file(GLOB ONNXRUNTIME_LIBS \"${ONNXRUNTIME_SOURCE_DIR}/lib/libonnxruntime.so*\")
+      foreach(lib_file \${ONNXRUNTIME_LIBS})
+        get_filename_component(lib_name \${lib_file} NAME)
+        if(IS_SYMLINK \${lib_file})
+          # Read the symlink target
+          file(READ_SYMLINK \${lib_file} symlink_target)
+          # Create symlink in destination
+          execute_process(
+            COMMAND \${CMAKE_COMMAND} -E create_symlink \${symlink_target} \${CMAKE_INSTALL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/\${lib_name}
+          )
+        else()
+          # Copy regular file
+          execute_process(
+            COMMAND \${CMAKE_COMMAND} -E copy_if_different \${lib_file} \${CMAKE_INSTALL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/
+          )
+        endif()
+      endforeach()
+    ")
+  endif()
+  # Install additional shared libraries
   install(
-    FILES ${ONNXRUNTIME_LIB}
+    FILES "${ONNXRUNTIME_SOURCE_DIR}/lib/libonnxruntime_providers_shared.so"
     DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   )
 endmacro()
