@@ -77,11 +77,28 @@ macro(build_onnxruntime)
       # COMMAND ${CMAKE_COMMAND} -E make_directory ${ONNXRUNTIME_INSTALL_DIR}
       COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different ${ONNXRUNTIME_SOURCE_DIR}/lib/cmake ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_SHARE_DESTINATION}/cmake
       COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different ${ONNXRUNTIME_SOURCE_DIR}/include ${CATKIN_DEVEL_PREFIX}/${CATKIN_GLOBAL_INCLUDE_DESTINATION}
-      COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ONNXRUNTIME_SOURCE_DIR}/lib/libonnxruntime.so" ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}
-      COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ONNXRUNTIME_SOURCE_DIR}/lib/libonnxruntime.so.${${PROJECT_NAME}_VERSION_MAJOR}" ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}
+      # Copy the actual versioned library file
       COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ONNXRUNTIME_SOURCE_DIR}/lib/libonnxruntime.so.${${PROJECT_NAME}_VERSION}" ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}
-    BUILD_BYPRODUCTS ${ONNXRUNTIME_LIB} ${ONNXRUNTIME_LIB}.${${PROJECT_NAME}_VERSION_MAJOR} ${ONNXRUNTIME_LIB}.${${PROJECT_NAME}_VERSION}
+      # Copy the providers shared library (not versioned)
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ONNXRUNTIME_SOURCE_DIR}/lib/libonnxruntime_providers_shared.so" ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}
+    BUILD_BYPRODUCTS ${ONNXRUNTIME_LIB}.${${PROJECT_NAME}_VERSION} ${ONNXRUNTIME_LIB}.${${PROJECT_NAME}_VERSION_MAJOR} ${ONNXRUNTIME_LIB}
   )
+
+  # Create symlinks for versioned libraries in development directory (Unix-like systems only)
+  if(NOT WIN32)
+    add_custom_command(TARGET ${EP_NAME} POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E create_symlink libonnxruntime.so.${${PROJECT_NAME}_VERSION} ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime.so.${${PROJECT_NAME}_VERSION_MAJOR}
+      COMMAND ${CMAKE_COMMAND} -E create_symlink libonnxruntime.so.${${PROJECT_NAME}_VERSION_MAJOR} ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime.so
+      COMMENT "Creating symlinks for versioned libraries"
+    )
+  else()
+    # On Windows, copy the versioned files directly
+    add_custom_command(TARGET ${EP_NAME} POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ONNXRUNTIME_SOURCE_DIR}/lib/libonnxruntime.so.${${PROJECT_NAME}_VERSION_MAJOR}" ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ONNXRUNTIME_SOURCE_DIR}/lib/libonnxruntime.so" ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}
+      COMMENT "Copying versioned libraries for Windows"
+    )
+  endif()
 
   install(
     DIRECTORY ${ONNXRUNTIME_LIB_DIR}/cmake/
@@ -95,10 +112,38 @@ macro(build_onnxruntime)
     DIRECTORY ${ONNXRUNTIME_SOURCE_DIR}/include/
     DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION}
   )
+  
+  # Install the actual versioned library file and create symlinks for compatibility
   install(
-    FILES ${ONNXRUNTIME_LIB} ${ONNXRUNTIME_LIB}.${${PROJECT_NAME}_VERSION_MAJOR} ${ONNXRUNTIME_LIB}.${${PROJECT_NAME}_VERSION}
+    FILES "${ONNXRUNTIME_SOURCE_DIR}/lib/libonnxruntime.so.${${PROJECT_NAME}_VERSION}"
     DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   )
+  install(
+    FILES "${ONNXRUNTIME_SOURCE_DIR}/lib/libonnxruntime_providers_shared.so"
+    DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  )
+  
+  # Create symlinks for versioned libraries during installation
+  if(NOT WIN32)
+    # On Unix-like systems, create symlinks to preserve original structure
+    install(CODE "
+      file(CREATE_LINK 
+        \"libonnxruntime.so.${${PROJECT_NAME}_VERSION}\"
+        \"\${CMAKE_INSTALL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime.so.${${PROJECT_NAME}_VERSION_MAJOR}\"
+        SYMBOLIC)
+      file(CREATE_LINK 
+        \"libonnxruntime.so.${${PROJECT_NAME}_VERSION_MAJOR}\"
+        \"\${CMAKE_INSTALL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime.so\"
+        SYMBOLIC)
+    ")
+  else()
+    # On Windows, install the versioned files directly (fallback for platforms without symlink support)
+    install(
+      FILES "${ONNXRUNTIME_SOURCE_DIR}/lib/libonnxruntime.so.${${PROJECT_NAME}_VERSION_MAJOR}"
+            "${ONNXRUNTIME_SOURCE_DIR}/lib/libonnxruntime.so"
+      DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+    )
+  endif()
 endmacro()
 
 build_onnxruntime()
