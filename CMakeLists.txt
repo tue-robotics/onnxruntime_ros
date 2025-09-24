@@ -1,11 +1,10 @@
 cmake_minimum_required(VERSION 3.24 FATAL_ERROR)
-project(onnxruntime_ros)
+set(PROJECT_NAME onnxruntime_ros)
 
 cmake_policy(SET CMP0097 NEW)
 cmake_policy(SET CMP0148 OLD)
 
 find_package(catkin REQUIRED)
-
 catkin_package_xml()
 # split version in parts and pass to extra file
 string(REPLACE "." ";" ${PROJECT_NAME}_VERSION_LIST "${${PROJECT_NAME}_VERSION}")
@@ -17,6 +16,8 @@ list(GET ${PROJECT_NAME}_VERSION_LIST 0 ${PROJECT_NAME}_VERSION_MAJOR)
 list(GET ${PROJECT_NAME}_VERSION_LIST 1 ${PROJECT_NAME}_VERSION_MINOR)
 list(GET ${PROJECT_NAME}_VERSION_LIST 2 ${PROJECT_NAME}_VERSION_PATCH)
 
+project(${PROJECT_NAME} VERSION ${${PROJECT_NAME}_VERSION})
+
 macro(build_onnxruntime)
   if(NOT ${CMAKE_VERBOSE_MAKEFILE})
     set(should_log ON)
@@ -24,17 +25,17 @@ macro(build_onnxruntime)
     set(should_log OFF)
   endif()
 
-  set(ONNXRUNTIME_URL_BASE "https://github.com/microsoft/onnxruntime/releases/download/v${${PROJECT_NAME}_VERSION}")
+  set(ONNXRUNTIME_URL_BASE "https://github.com/microsoft/onnxruntime/releases/download/v${PROJECT_VERSION}")
 
   include(CheckLanguage)
   check_language(CUDA)
   if(CMAKE_CUDA_COMPILER)
     enable_language(CUDA)
     message(STATUS "Compiling with CUDA")
-    set(ONNXRUNTIME_FILENAME "onnxruntime-linux-x64-gpu-${${PROJECT_NAME}_VERSION}.tgz")
+    set(ONNXRUNTIME_FILENAME "onnxruntime-linux-x64-gpu-${PROJECT_VERSION}.tgz")
   else()
     message(STATUS "Compiling without CUDA")
-    set(ONNXRUNTIME_FILENAME "onnxruntime-linux-x64-${${PROJECT_NAME}_VERSION}.tgz")
+    set(ONNXRUNTIME_FILENAME "onnxruntime-linux-x64-${PROJECT_VERSION}.tgz")
   endif()
 
   set(EP_NAME "EP_${PROJECT_NAME}")
@@ -78,9 +79,9 @@ macro(build_onnxruntime)
       COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different ${ONNXRUNTIME_SOURCE_DIR}/lib/cmake ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_SHARE_DESTINATION}/cmake
       COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different ${ONNXRUNTIME_SOURCE_DIR}/include ${CATKIN_DEVEL_PREFIX}/${CATKIN_GLOBAL_INCLUDE_DESTINATION}
       COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ONNXRUNTIME_SOURCE_DIR}/lib/libonnxruntime.so" ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}
-      COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ONNXRUNTIME_SOURCE_DIR}/lib/libonnxruntime.so.${${PROJECT_NAME}_VERSION_MAJOR}" ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}
-      COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ONNXRUNTIME_SOURCE_DIR}/lib/libonnxruntime.so.${${PROJECT_NAME}_VERSION}" ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}
-    BUILD_BYPRODUCTS ${ONNXRUNTIME_LIB} ${ONNXRUNTIME_LIB}.${${PROJECT_NAME}_VERSION_MAJOR} ${ONNXRUNTIME_LIB}.${${PROJECT_NAME}_VERSION}
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ONNXRUNTIME_SOURCE_DIR}/lib/libonnxruntime.so.${PROJECT_VERSION_MAJOR}" ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ONNXRUNTIME_SOURCE_DIR}/lib/libonnxruntime.so.${PROJECT_VERSION}" ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}
+    BUILD_BYPRODUCTS ${ONNXRUNTIME_LIB} ${ONNXRUNTIME_LIB}.${PROJECT_VERSION_MAJOR} ${ONNXRUNTIME_LIB}.${PROJECT_VERSION}
   )
 
   install(
@@ -96,7 +97,7 @@ macro(build_onnxruntime)
     DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION}
   )
   install(
-    FILES ${ONNXRUNTIME_LIB} ${ONNXRUNTIME_LIB}.${${PROJECT_NAME}_VERSION_MAJOR} ${ONNXRUNTIME_LIB}.${${PROJECT_NAME}_VERSION}
+    FILES ${ONNXRUNTIME_LIB} ${ONNXRUNTIME_LIB}.${PROJECT_VERSION_MAJOR} ${ONNXRUNTIME_LIB}.${PROJECT_VERSION}
     DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   )
 endmacro()
