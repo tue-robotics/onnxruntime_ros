@@ -50,6 +50,12 @@ set(_build_byproducts
   "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime.so.${${PROJECT_NAME}_VERSION_MAJOR}"
   "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime.so"
 )
+set(_install_files
+  ${ONNXRUNTIME_LIB}
+  ${ONNXRUNTIME_LIB}.${${PROJECT_NAME}_VERSION_MAJOR}
+  ${ONNXRUNTIME_LIB}.${${PROJECT_NAME}_VERSION}
+)
+
 
 include(CheckLanguage)
 check_language(CUDA)
@@ -66,6 +72,11 @@ if(CMAKE_CUDA_COMPILER)
     "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime_providers_cuda.so"
     "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime_providers_shared.so"
     "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime_providers_tensorrt.so"
+  )
+  list(APPEND _install_files
+    "${ONNXRUNTIME_LIB_DIR}/libonnxruntime_providers_cuda.so"
+    "${ONNXRUNTIME_LIB_DIR}/libonnxruntime_providers_shared.so"
+    "${ONNXRUNTIME_LIB_DIR}/libonnxruntime_providers_tensorrt.so"
   )
 else()
   message(STATUS "Compiling without CUDA")
@@ -98,7 +109,7 @@ install(
   DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION}
 )
 install(
-  FILES ${ONNXRUNTIME_LIB} ${ONNXRUNTIME_LIB}.${${PROJECT_NAME}_VERSION_MAJOR} ${ONNXRUNTIME_LIB}.${${PROJECT_NAME}_VERSION} "${ONNXRUNTIME_LIB_DIR}/libonnxruntime_providers_cuda.so" "${ONNXRUNTIME_LIB_DIR}/libonnxruntime_providers_shared.so" "${ONNXRUNTIME_LIB_DIR}/libonnxruntime_providers_tensorrt.so"
+  FILES ${_install_files}
   DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 )
 
