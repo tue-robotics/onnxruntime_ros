@@ -25,41 +25,51 @@ endif()
 
 set(ONNXRUNTIME_URL_BASE "https://github.com/microsoft/onnxruntime/releases/download/v${${PROJECT_NAME}_VERSION}")
 
-include(CheckLanguage)
-check_language(CUDA)
-if(CMAKE_CUDA_COMPILER)
-  enable_language(CUDA)
-  message(STATUS "Compiling with CUDA")
-  set(ONNXRUNTIME_FILENAME "onnxruntime-linux-x64-gpu-${${PROJECT_NAME}_VERSION}.tgz")
-else()
-  message(STATUS "Compiling without CUDA")
-  set(ONNXRUNTIME_FILENAME "onnxruntime-linux-x64-${${PROJECT_NAME}_VERSION}.tgz")
-endif()
-
 set(EP_NAME "EP_${PROJECT_NAME}")
-
 set(ONNXRUNTIME_SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/${EP_NAME}-prefix/src/${EP_NAME}")
 set(ONNXRUNTIME_INSTALL_DIR "${CMAKE_CURRENT_BINARY_DIR}/${EP_NAME}_install")
-
 set(ONNXRUNTIME_INCLUDE_DIR
     "${ONNXRUNTIME_INSTALL_DIR}/include"
     CACHE PATH "onnxruntime include directory." FORCE)
 set(ONNXRUNTIME_LIB_DIR
     "${ONNXRUNTIME_INSTALL_DIR}/lib"
     CACHE PATH "onnxruntime lib directory." FORCE)
+set(ONNXRUNTIME_LIB
+    "${ONNXRUNTIME_LIB_DIR}/libonnxruntime.so"
+    CACHE FILEPATH "ONNXRUNTIME shared library." FORCE)
 
-if(WIN32)
-  set(ONNXRUNTIME_LIB
-      "${ONNXRUNTIME_LIB_DIR}/onnxruntime.lib"
-      CACHE FILEPATH "ONNXRUNTIME shared library." FORCE)
-elseif(APPLE)
-  set(ONNXRUNTIME_LIB
-      "${ONNXRUNTIME_LIB_DIR}/libonnxruntime.dylib"
-      CACHE FILEPATH "ONNXRUNTIME shared library." FORCE)
+set(_install_commands
+  COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different ${ONNXRUNTIME_SOURCE_DIR}/lib/cmake ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_SHARE_DESTINATION}/cmake
+  COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different ${ONNXRUNTIME_SOURCE_DIR}/include ${CATKIN_DEVEL_PREFIX}/${CATKIN_GLOBAL_INCLUDE_DESTINATION}
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ONNXRUNTIME_SOURCE_DIR}/lib/libonnxruntime.so.${${PROJECT_NAME}_VERSION}" ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}
+  COMMAND ${CMAKE_COMMAND} -E create_symlink "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime.so.${${PROJECT_NAME}_VERSION}" "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime.so.${${PROJECT_NAME}_VERSION_MAJOR}"
+  COMMAND ${CMAKE_COMMAND} -E create_symlink "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime.so.${${PROJECT_NAME}_VERSION_MAJOR}" "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime.so"
+)
+set(_build_byproducts
+  "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime.so.${${PROJECT_NAME}_VERSION}"
+  "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime.so.${${PROJECT_NAME}_VERSION_MAJOR}"
+  "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime.so"
+)
+
+include(CheckLanguage)
+check_language(CUDA)
+if(CMAKE_CUDA_COMPILER)
+  enable_language(CUDA)
+  message(STATUS "Compiling with CUDA")
+  set(ONNXRUNTIME_FILENAME "onnxruntime-linux-x64-gpu-${${PROJECT_NAME}_VERSION}.tgz")
+  list(APPEND _install_commands
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ONNXRUNTIME_SOURCE_DIR}/lib/libonnxruntime_providers_cuda.so" ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ONNXRUNTIME_SOURCE_DIR}/lib/libonnxruntime_providers_shared.so" ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ONNXRUNTIME_SOURCE_DIR}/lib/libonnxruntime_providers_tensorrt.so" ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}
+  )
+  list(APPEND _build_byproducts
+    "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime_providers_cuda.so"
+    "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime_providers_shared.so"
+    "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime_providers_tensorrt.so"
+  )
 else()
-  set(ONNXRUNTIME_LIB
-      "${ONNXRUNTIME_LIB_DIR}/libonnxruntime.so"
-      CACHE FILEPATH "ONNXRUNTIME shared library." FORCE)
+  message(STATUS "Compiling without CUDA")
+  set(ONNXRUNTIME_FILENAME "onnxruntime-linux-x64-${${PROJECT_NAME}_VERSION}.tgz")
 endif()
 
 include(ExternalProject)
@@ -71,18 +81,8 @@ externalproject_add(${EP_NAME}
   CONFIGURE_COMMAND ""
   BUILD_COMMAND ""
   UPDATE_COMMAND ""
-  INSTALL_COMMAND
-    # COMMAND ${CMAKE_COMMAND} -E remove_directory ${ONNXRUNTIME_INSTALL_DIR}
-    # COMMAND ${CMAKE_COMMAND} -E make_directory ${ONNXRUNTIME_INSTALL_DIR}
-    COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different ${ONNXRUNTIME_SOURCE_DIR}/lib/cmake ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_SHARE_DESTINATION}/cmake
-    COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different ${ONNXRUNTIME_SOURCE_DIR}/include ${CATKIN_DEVEL_PREFIX}/${CATKIN_GLOBAL_INCLUDE_DESTINATION}
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ONNXRUNTIME_SOURCE_DIR}/lib/libonnxruntime.so.${${PROJECT_NAME}_VERSION}" ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}
-    COMMAND ${CMAKE_COMMAND} -E create_symlink "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime.so.${${PROJECT_NAME}_VERSION}" "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime.so.${${PROJECT_NAME}_VERSION_MAJOR}"
-    COMMAND ${CMAKE_COMMAND} -E create_symlink "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime.so.${${PROJECT_NAME}_VERSION_MAJOR}" "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime.so"
-  BUILD_BYPRODUCTS
-    "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime.so.${${PROJECT_NAME}_VERSION}"
-    "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime.so.${${PROJECT_NAME}_VERSION_MAJOR}"
-    "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime.so"
+  INSTALL_COMMAND ${_install_commands}
+  BUILD_BYPRODUCTS ${_build_byproducts}
 )
 
 install(
@@ -98,7 +98,7 @@ install(
   DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION}
 )
 install(
-  FILES ${ONNXRUNTIME_LIB} ${ONNXRUNTIME_LIB}.${${PROJECT_NAME}_VERSION_MAJOR} ${ONNXRUNTIME_LIB}.${${PROJECT_NAME}_VERSION}
+  FILES ${ONNXRUNTIME_LIB} ${ONNXRUNTIME_LIB}.${${PROJECT_NAME}_VERSION_MAJOR} ${ONNXRUNTIME_LIB}.${${PROJECT_NAME}_VERSION} "${ONNXRUNTIME_LIB_DIR}/libonnxruntime_providers_cuda.so" "${ONNXRUNTIME_LIB_DIR}/libonnxruntime_providers_shared.so" "${ONNXRUNTIME_LIB_DIR}/libonnxruntime_providers_tensorrt.so"
   DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 )
 
