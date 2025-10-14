@@ -44,16 +44,19 @@ set(_install_commands
   COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ONNXRUNTIME_SOURCE_DIR}/lib/libonnxruntime.so.${${PROJECT_NAME}_VERSION}" ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}
   COMMAND ${CMAKE_COMMAND} -E create_symlink "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime.so.${${PROJECT_NAME}_VERSION}" "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime.so.${${PROJECT_NAME}_VERSION_MAJOR}"
   COMMAND ${CMAKE_COMMAND} -E create_symlink "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime.so.${${PROJECT_NAME}_VERSION_MAJOR}" "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime.so"
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ONNXRUNTIME_SOURCE_DIR}/lib/libonnxruntime_providers_shared.so" ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}
 )
 set(_build_byproducts
   "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime.so.${${PROJECT_NAME}_VERSION}"
   "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime.so.${${PROJECT_NAME}_VERSION_MAJOR}"
   "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime.so"
+  "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime_providers_shared.so"
 )
 set(_install_files
   ${ONNXRUNTIME_LIB}
   ${ONNXRUNTIME_LIB}.${${PROJECT_NAME}_VERSION_MAJOR}
   ${ONNXRUNTIME_LIB}.${${PROJECT_NAME}_VERSION}
+  "${ONNXRUNTIME_LIB_DIR}/libonnxruntime_providers_shared.so"
 )
 
 
@@ -65,19 +68,19 @@ if(CMAKE_CUDA_COMPILER)
   set(ONNXRUNTIME_FILENAME "onnxruntime-linux-x64-gpu-${${PROJECT_NAME}_VERSION}.tgz")
   list(APPEND _install_commands
     COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ONNXRUNTIME_SOURCE_DIR}/lib/libonnxruntime_providers_cuda.so" ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ONNXRUNTIME_SOURCE_DIR}/lib/libonnxruntime_providers_shared.so" ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}
     COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ONNXRUNTIME_SOURCE_DIR}/lib/libonnxruntime_providers_tensorrt.so" ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}
   )
+  list(SORT _install_commands)
   list(APPEND _build_byproducts
     "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime_providers_cuda.so"
-    "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime_providers_shared.so"
     "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime_providers_tensorrt.so"
   )
+  list(SORT _build_byproducts)
   list(APPEND _install_files
     "${ONNXRUNTIME_LIB_DIR}/libonnxruntime_providers_cuda.so"
-    "${ONNXRUNTIME_LIB_DIR}/libonnxruntime_providers_shared.so"
     "${ONNXRUNTIME_LIB_DIR}/libonnxruntime_providers_tensorrt.so"
   )
+  list(SORT _install_files)
 else()
   message(STATUS "Compiling without CUDA")
   set(ONNXRUNTIME_FILENAME "onnxruntime-linux-x64-${${PROJECT_NAME}_VERSION}.tgz")
