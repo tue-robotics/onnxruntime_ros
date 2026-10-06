@@ -1,12 +1,9 @@
 cmake_minimum_required(VERSION 3.24 FATAL_ERROR)
 project(onnxruntime_ros)
 
-cmake_policy(SET CMP0097 NEW)
-cmake_policy(SET CMP0148 OLD)
-
-find_package(catkin REQUIRED)
-
-catkin_package_xml()
+find_package(ament_cmake REQUIRED)
+include(GNUInstallDirs)
+ament_package_xml()
 # split version in parts and pass to extra file
 string(REPLACE "." ";" ${PROJECT_NAME}_VERSION_LIST "${${PROJECT_NAME}_VERSION}")
 list(LENGTH ${PROJECT_NAME}_VERSION_LIST _count)
@@ -39,24 +36,36 @@ set(ONNXRUNTIME_LIB
     CACHE FILEPATH "ONNXRUNTIME shared library." FORCE)
 
 set(_install_commands
-  COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different ${ONNXRUNTIME_SOURCE_DIR}/lib/cmake ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_SHARE_DESTINATION}/cmake
-  COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different ${ONNXRUNTIME_SOURCE_DIR}/include ${CATKIN_DEVEL_PREFIX}/${CATKIN_GLOBAL_INCLUDE_DESTINATION}
-  COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ONNXRUNTIME_SOURCE_DIR}/lib/libonnxruntime.so.${${PROJECT_NAME}_VERSION}" ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}
-  COMMAND ${CMAKE_COMMAND} -E create_symlink "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime.so.${${PROJECT_NAME}_VERSION}" "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime.so.${${PROJECT_NAME}_VERSION_MAJOR}"
-  COMMAND ${CMAKE_COMMAND} -E create_symlink "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime.so.${${PROJECT_NAME}_VERSION_MAJOR}" "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime.so"
-  COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ONNXRUNTIME_SOURCE_DIR}/lib/libonnxruntime_providers_shared.so" ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}
+  COMMAND ${CMAKE_COMMAND} -E make_directory ${ONNXRUNTIME_INSTALL_DIR}/lib
+  COMMAND ${CMAKE_COMMAND} -E make_directory ${ONNXRUNTIME_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}
+  COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different
+    ${ONNXRUNTIME_SOURCE_DIR}/lib/cmake ${ONNXRUNTIME_INSTALL_DIR}/lib/cmake
+  COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different
+    ${ONNXRUNTIME_SOURCE_DIR}/include ${ONNXRUNTIME_INSTALL_DIR}/include
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    "${ONNXRUNTIME_SOURCE_DIR}/lib/libonnxruntime.so.${${PROJECT_NAME}_VERSION}"
+    ${ONNXRUNTIME_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}
+  COMMAND ${CMAKE_COMMAND} -E create_symlink
+    "libonnxruntime.so.${${PROJECT_NAME}_VERSION}"
+    ${ONNXRUNTIME_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}/libonnxruntime.so.${${PROJECT_NAME}_VERSION_MAJOR}
+  COMMAND ${CMAKE_COMMAND} -E create_symlink
+    "libonnxruntime.so.${${PROJECT_NAME}_VERSION_MAJOR}"
+    ${ONNXRUNTIME_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}/libonnxruntime.so
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    "${ONNXRUNTIME_SOURCE_DIR}/lib/libonnxruntime_providers_shared.so"
+    ${ONNXRUNTIME_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}
 )
 set(_build_byproducts
-  "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime.so.${${PROJECT_NAME}_VERSION}"
-  "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime.so.${${PROJECT_NAME}_VERSION_MAJOR}"
-  "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime.so"
-  "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime_providers_shared.so"
+  "${ONNXRUNTIME_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}/libonnxruntime.so.${${PROJECT_NAME}_VERSION}"
+  "${ONNXRUNTIME_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}/libonnxruntime.so.${${PROJECT_NAME}_VERSION_MAJOR}"
+  "${ONNXRUNTIME_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}/libonnxruntime.so"
+  "${ONNXRUNTIME_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}/libonnxruntime_providers_shared.so"
 )
 set(_install_files
-  ${ONNXRUNTIME_LIB}
-  ${ONNXRUNTIME_LIB}.${${PROJECT_NAME}_VERSION_MAJOR}
-  ${ONNXRUNTIME_LIB}.${${PROJECT_NAME}_VERSION}
-  "${ONNXRUNTIME_LIB_DIR}/libonnxruntime_providers_shared.so"
+  "${ONNXRUNTIME_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}/libonnxruntime.so"
+  "${ONNXRUNTIME_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}/libonnxruntime.so.${${PROJECT_NAME}_VERSION_MAJOR}"
+  "${ONNXRUNTIME_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}/libonnxruntime.so.${${PROJECT_NAME}_VERSION}"
+  "${ONNXRUNTIME_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}/libonnxruntime_providers_shared.so"
 )
 
 
@@ -67,17 +76,17 @@ if(CMAKE_CUDA_COMPILER)
   message(STATUS "Compiling with CUDA")
   set(ONNXRUNTIME_FILENAME "onnxruntime-linux-x64-gpu-${${PROJECT_NAME}_VERSION}.tgz")
   list(APPEND _install_commands
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ONNXRUNTIME_SOURCE_DIR}/lib/libonnxruntime_providers_cuda.so" ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ONNXRUNTIME_SOURCE_DIR}/lib/libonnxruntime_providers_tensorrt.so" ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ONNXRUNTIME_SOURCE_DIR}/lib/libonnxruntime_providers_cuda.so" ${ONNXRUNTIME_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ONNXRUNTIME_SOURCE_DIR}/lib/libonnxruntime_providers_tensorrt.so" ${ONNXRUNTIME_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}
   )
   list(APPEND _build_byproducts
-    "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime_providers_cuda.so"
-    "${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION}/libonnxruntime_providers_tensorrt.so"
+    "${ONNXRUNTIME_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}/libonnxruntime_providers_cuda.so"
+    "${ONNXRUNTIME_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}/libonnxruntime_providers_tensorrt.so"
   )
   list(SORT _build_byproducts)
   list(APPEND _install_files
-    "${ONNXRUNTIME_LIB_DIR}/libonnxruntime_providers_cuda.so"
-    "${ONNXRUNTIME_LIB_DIR}/libonnxruntime_providers_tensorrt.so"
+    "${ONNXRUNTIME_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}/libonnxruntime_providers_cuda.so"
+    "${ONNXRUNTIME_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}/libonnxruntime_providers_tensorrt.so"
   )
   list(SORT _install_files)
 else()
@@ -98,21 +107,24 @@ externalproject_add(${EP_NAME}
   BUILD_BYPRODUCTS ${_build_byproducts}
 )
 
+add_custom_target(${PROJECT_NAME}_external ALL DEPENDS ${EP_NAME})
+
 install(
-  DIRECTORY ${ONNXRUNTIME_LIB_DIR}/cmake/
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/cmake
+  DIRECTORY ${ONNXRUNTIME_INSTALL_DIR}/lib/cmake/
+  DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}/cmake
 )
 install(
-  FILES "${ONNXRUNTIME_LIB_DIR}/pkgconfig/*.pc"
-  DESTINATION ${CATKIN_GLOBAL_LIB_DESTINATION}/pkgconfig
+  DIRECTORY ${ONNXRUNTIME_SOURCE_DIR}/lib/pkgconfig/
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
+  FILES_MATCHING PATTERN "*.pc"
 )
 install(
-  DIRECTORY ${ONNXRUNTIME_SOURCE_DIR}/include/
-  DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION}
+  DIRECTORY ${ONNXRUNTIME_INSTALL_DIR}/include/
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 install(
   FILES ${_install_files}
-  DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
 if(CMAKE_CUDA_COMPILER)
@@ -121,13 +133,15 @@ else()
     set(${PROJECT_NAME}_CUDA_ENABLED FALSE)
 endif()
 
-catkin_package(
-  CFG_EXTRAS ${PROJECT_NAME}-extras.cmake
-  # INCLUDE_DIRECTORIES SYSTEM include
-  EXPORTED_TARGETS ${EP_NAME}
+configure_file(
+  cmake/${PROJECT_NAME}-extras.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-extras.cmake
+  @ONLY
 )
 
-if(CATKIN_ENABLE_TESTING)
-  find_package(catkin_lint_cmake REQUIRED)
-  catkin_add_catkin_lint_test("-W2 --ignore GLOBAL_VAR_COLLISION --ignore MISSING_DIRECTORY --ignore MISSING_FILE --ignore UNDEFINED_TARGET")
+if(BUILD_TESTING)
+  find_package(ament_lint_auto REQUIRED)
+  ament_lint_auto_find_test_dependencies()
 endif()
+
+ament_package(CONFIG_EXTRAS "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-extras.cmake")
