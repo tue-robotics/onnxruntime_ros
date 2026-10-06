@@ -75,9 +75,13 @@ if(CMAKE_CUDA_COMPILER)
   enable_language(CUDA)
   message(STATUS "Compiling with CUDA")
   set(ONNXRUNTIME_FILENAME "onnxruntime-linux-x64-gpu-${${PROJECT_NAME}_VERSION}.tgz")
-  list(APPEND _install_commands
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ONNXRUNTIME_SOURCE_DIR}/lib/libonnxruntime_providers_cuda.so" ${ONNXRUNTIME_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ONNXRUNTIME_SOURCE_DIR}/lib/libonnxruntime_providers_tensorrt.so" ${ONNXRUNTIME_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}
+    list(APPEND _install_commands
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+      "${ONNXRUNTIME_SOURCE_DIR}/lib/libonnxruntime_providers_cuda.so"
+      ${ONNXRUNTIME_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+      "${ONNXRUNTIME_SOURCE_DIR}/lib/libonnxruntime_providers_tensorrt.so"
+      ${ONNXRUNTIME_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}
   )
   list(APPEND _build_byproducts
     "${ONNXRUNTIME_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}/libonnxruntime_providers_cuda.so"
