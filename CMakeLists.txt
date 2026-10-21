@@ -90,6 +90,8 @@ endif()
 set(ONNXRUNTIME_ARCHIVE "${CMAKE_CURRENT_BINARY_DIR}/${ONNXRUNTIME_FILENAME}")
 if(NOT EXISTS "${ONNXRUNTIME_ARCHIVE}")
   # Authenticate the download when a GITHUB_TOKEN is available, to avoid rate limiting
+  # The token only authenticates the download and doesn't affect the build result, so silence catkin_lint's ENV_VAR warning
+  #catkin_lint: ignore env_var
   set(_download_args)
   if(NOT "$ENV{GITHUB_TOKEN}" STREQUAL "")
     list(APPEND _download_args HTTPHEADER "Authorization: Bearer $ENV{GITHUB_TOKEN}")
@@ -99,6 +101,7 @@ if(NOT EXISTS "${ONNXRUNTIME_ARCHIVE}")
     ${_download_args}
     STATUS _download_status
   )
+  #catkin_lint: report env_var
   list(GET _download_status 0 _download_code)
   if(NOT _download_code EQUAL 0)
     file(REMOVE "${ONNXRUNTIME_ARCHIVE}.part")
