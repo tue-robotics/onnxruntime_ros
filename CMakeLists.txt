@@ -85,10 +85,32 @@ else()
   set(ONNXRUNTIME_FILENAME "onnxruntime-linux-x64-${${PROJECT_NAME}_VERSION}.tgz")
 endif()
 
+# Download at configure time instead of via externalproject_add, so a GITHUB_TOKEN is only kept in memory.
+# externalproject_add would write its HTTP_HEADER to the generated download script in the build directory.
+set(ONNXRUNTIME_ARCHIVE "${CMAKE_CURRENT_BINARY_DIR}/${ONNXRUNTIME_FILENAME}")
+if(NOT EXISTS "${ONNXRUNTIME_ARCHIVE}")
+  # Authenticate the download when a GITHUB_TOKEN is available, to avoid rate limiting
+  set(_download_args)
+  if(NOT "$ENV{GITHUB_TOKEN}" STREQUAL "")
+    list(APPEND _download_args HTTPHEADER "Authorization: Bearer $ENV{GITHUB_TOKEN}")
+  endif()
+  message(STATUS "Downloading ${ONNXRUNTIME_URL_BASE}/${ONNXRUNTIME_FILENAME}")
+  file(DOWNLOAD "${ONNXRUNTIME_URL_BASE}/${ONNXRUNTIME_FILENAME}" "${ONNXRUNTIME_ARCHIVE}.part"
+    ${_download_args}
+    STATUS _download_status
+  )
+  list(GET _download_status 0 _download_code)
+  if(NOT _download_code EQUAL 0)
+    file(REMOVE "${ONNXRUNTIME_ARCHIVE}.part")
+    list(GET _download_status 1 _download_error)
+    message(FATAL_ERROR "Failed to download ${ONNXRUNTIME_FILENAME}: ${_download_error}")
+  endif()
+  file(RENAME "${ONNXRUNTIME_ARCHIVE}.part" "${ONNXRUNTIME_ARCHIVE}")
+endif()
+
 include(ExternalProject)
 externalproject_add(${EP_NAME}
-  URL "${ONNXRUNTIME_URL_BASE}/${ONNXRUNTIME_FILENAME}"
-  DOWNLOAD_NO_PROGRESS NOT ${should_log}
+  URL "${ONNXRUNTIME_ARCHIVE}"
   LOG_CONFIGURE ${should_log}
   LOG_BUILD ${should_log}
   CONFIGURE_COMMAND ""
